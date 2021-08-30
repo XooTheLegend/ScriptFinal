@@ -12,11 +12,9 @@ const pool = mysql.createPool({
 });
 
 const sema = Joi.object().keys({
-    email: Joi.string().trim().min(4).max(20).required(),
-    password: Joi.string().trim().min(1).max(20).required(),
-    tip:Joi.string().trim().min(2).max(20).required(),
-    name:Joi.string().trim().min(4).max(20).required(),
-    surname:Joi.string().trim().min(4).max(20).required()
+    title: Joi.string().trim().min(4).max(20).required(),
+    author: Joi.string().trim().min(1).max(20).required(),
+    content:Joi.string().trim().min(20).max(200).required()
 
 });
 
@@ -24,8 +22,9 @@ const route = express.Router();
 
 route.use(express.json());
 
-route.get('/users', (req, res)=>{
-    pool.query('select * from korisnici', (err, rows)=>{
+
+route.get('/news', (req, res)=>{
+    pool.query('select * from vesti', (err, rows)=>{
         if(err)
             res.status(500).send(err.sqlMessage);
         else
@@ -33,20 +32,20 @@ route.get('/users', (req, res)=>{
     });
 });
 
-route.post('/users', (req,res) => {
+route.post('/news', (req,res) => {
     let {error} = Joi.validate(req.body, sema);
 
     if(error){
         res.status(400).send(error.details[0].message);
     }else{
-        let query = 'insert into korisnici (email, password, tip, name, surname) values (?,?,?,?,?)';
-        let formated = mysql.format(query, [req.body.email, req.body.password, req.body.tip, req.body.name, req.body.surname]);
+        let query = 'insert into vesti (author, title, content) values (?,?,?)';
+        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content]);
 
         pool.query(formated, (err,response) =>{
             if(error){
                 res.status(500).send(error.sqlMessage);
             } else { //moze i bez ovoga, npr samo res.send(user added);
-                query = 'select * from korisnici where id=?';
+                query = 'select * from vesti where id=?';
                 formated = mysql.format(query, [response.insertId]);
 
                 pool.query(formated, (err,rows) => {
@@ -61,9 +60,9 @@ route.post('/users', (req,res) => {
     }
 });
 
-route.get('/user/:id', (req,res) =>{
+route.get('/new/:id', (req,res) =>{
 
-    let query = 'select * from korisnici where id=?';
+    let query = 'select * from vesti where id=?';
     let formated = mysql.format(query, [req.params.id]);
 
     pool.query(formated, (err,rows) => {
@@ -75,20 +74,20 @@ route.get('/user/:id', (req,res) =>{
     });
 });
 
-route.put('/user/:id', (req,res) => {
+route.put('/new/:id', (req,res) => {
     let {error} = Joi.validate(req.body, sema);
 
     if(error){
         res.status(400).send(error.details[0].message);
     }else{
-        let query = 'update korisnici set email=?, password=?, tip=?, name=?, surname=? where id=?';
-        let formated = mysql.format(query, [req.body.email, req.body.password, req.body.tip, req.body.name, req.body.surname, req.params.id]);
+        let query = 'update vesti set author=?, title=?, content=? where id=?';
+        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content, req.params.id]);
 
         pool.query(formated, (err,response) =>{
             if(error){
                 response.status(500).send(err.sqlMessage);
             } else {
-                query = 'select * from korisnici where id=?';
+                query = 'select * from vesti where id=?';
                 formated = mysql.format(query, [req.params.id]);
 
                 pool.query(formated, (err,rows) => {
@@ -103,8 +102,8 @@ route.put('/user/:id', (req,res) => {
     }
 });
 
-route.delete('/user/:id', (req,res) => {
-    let query = 'select * from korisnici where id=?';
+route.delete('/new/:id', (req,res) => {
+    let query = 'select * from vesti where id=?';
     let formated = mysql.format(query, [req.params.id]);
 
     pool.query(formated, (err,rows) =>{
@@ -112,7 +111,7 @@ route.delete('/user/:id', (req,res) => {
             res.status(500).message(err.sqlMessage);
         } else {
             let user = rows[0];
-            let query = 'delete from korisnici where id=?';
+            let query = 'delete from vesti where id=?';
             let formated = mysql.format(query, [req.params.id]);
 
             pool.query(formated, (err, rows) => {
