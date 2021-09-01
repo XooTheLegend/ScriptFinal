@@ -5,6 +5,8 @@ const comments = require('./routes/comments')
 const path = require('path');
 const history = require('connect-history-api-fallback')
 const cors = require('cors')
+const cookieParser = require('cookie-parser')
+const cookies = require('./routes/cookies')
 
 const app = express();
 
@@ -16,9 +18,16 @@ app.use(function(req, res, next) {
 });
 
 app.use(cors());
+app.use(cookieParser());
 
-app.use('/api', users,news,comments);
+app.use('/api', users,news,comments,cookies);
 
+app.get('/cookie',(req,res)=>{
+        let r = (Math.random() + 1).toString(36).substring(2);
+        res.json({
+            cookie:r
+        })
+})
 
 const staticDir = express.static(path.join(__dirname, 'dist'));
 

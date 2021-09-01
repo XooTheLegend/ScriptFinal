@@ -1,7 +1,7 @@
 const express = require('express');
 const mysql = require('mysql');
 const Joi = require('joi');
-
+const jwt = require('jsonwebtoken')
 
 const pool = mysql.createPool({
     connectionLimit: 100,
@@ -22,6 +22,18 @@ const route = express.Router();
 
 route.use(express.json());
 
+function authenticateTokenNews(req,res,next){
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; //bice undefined ili token
+    if(token==null) return res.sendStatus(401);
+
+    jwt.verify(token,'secretkey',(err,user)=>{
+        if(err) return res.sendStatus(403); //ima token ali nije validan
+        req.user = user;
+        next();
+    });
+
+}
 
 route.get('/news', (req, res)=>{
     pool.query('select * from vesti', (err, rows)=>{
@@ -32,7 +44,7 @@ route.get('/news', (req, res)=>{
     });
 });
 
-route.post('/news', (req,res) => {
+route.post('/news',authenticateTokenNews, (req,res) => {
     let {error} = Joi.validate(req.body, sema);
 
     if(error){
@@ -60,7 +72,7 @@ route.post('/news', (req,res) => {
     }
 });
 
-route.get('/new/:id', (req,res) =>{
+route.get('/new/:id([0-9]+)?/', (req,res) =>{
 
     let query = 'select * from vesti where id=?';
     let formated = mysql.format(query, [req.params.id]);
@@ -69,12 +81,16 @@ route.get('/new/:id', (req,res) =>{
         if(err){
             res.status(500).send(error.sqlMessage);
         }else{
-            res.send(rows[0])
+            if(rows.length===0){
+                res.status(404).send('Page not found!')
+            }else{
+                res.send(rows[0]);
+            }
         }
     });
 });
 
-route.put('/new/:id', (req,res) => {
+route.put('/new/:id([0-9]+)?/', authenticateTokenNews, (req,res) => {
     let {error} = Joi.validate(req.body, sema);
 
     if(error){
@@ -94,7 +110,11 @@ route.put('/new/:id', (req,res) => {
                     if(err){
                         res.status(500).send(error.sqlMessage);
                     }else{
-                        res.send(rows[0])
+                        if(rows.length === 0){
+                            res.status(404).send('Page not found!');
+                        }else{
+                            res.send(rows[0]);
+                        }
                     }
                 });
             }
@@ -102,7 +122,7 @@ route.put('/new/:id', (req,res) => {
     }
 });
 
-route.delete('/new/:id', (req,res) => {
+route.delete('/new/:id([0-9]+)?/', authenticateTokenNews, (req,res) => {
     let query = 'select * from vesti where id=?';
     let formated = mysql.format(query, [req.params.id]);
 
@@ -110,17 +130,21 @@ route.delete('/new/:id', (req,res) => {
         if(err){
             res.status(500).message(err.sqlMessage);
         } else {
-            let user = rows[0];
-            let query = 'delete from vesti where id=?';
-            let formated = mysql.format(query, [req.params.id]);
+            let news = rows[0];
+            if (typeof news === 'undefined') {
+                res.status(404).send('Page not found!');
+            } else{
+                let query = 'delete from vesti where id=?';
+                let formated = mysql.format(query, [req.params.id]);
 
-            pool.query(formated, (err, rows) => {
-                if (err)
-                    res.status(500).send(err.sqlMessage);
-                else
-                    res.send(user);
+                pool.query(formated, (err, rows) => {
+                    if (err)
+                        res.status(500).send(err.sqlMessage);
+                    else
+                        res.send(news);
 
-            });
+                });
+            }
         }
     });
 });

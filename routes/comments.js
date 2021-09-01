@@ -12,7 +12,7 @@ const pool = mysql.createPool({
 
 const sema = Joi.object().keys({
     author: Joi.string().trim().min(4).max(20).required(),
-    content: Joi.string().trim().min(1).max(100).required(),
+    content: Joi.string().trim().min(20).max(100).required(),
     news: Joi.number().min(1).max(200).required()
 });
 
@@ -20,8 +20,7 @@ const route = express.Router();
 
 route.use(express.json());
 
-route.get('/comment/:id', (req,res) =>{
-
+route.get('/comment/:id([0-9]+)?/', (req,res) =>{
     let query = 'select * from komentari where news=?';
     let formated = mysql.format(query, [req.params.id]);
 
