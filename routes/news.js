@@ -14,7 +14,8 @@ const pool = mysql.createPool({
 const sema = Joi.object().keys({
     title: Joi.string().trim().min(4).max(20).required(),
     author: Joi.string().trim().min(1).max(20).required(),
-    content:Joi.string().trim().min(20).max(200).required()
+    content:Joi.string().trim().min(20).max(200).required(),
+    category:Joi.string().trim().min(2).max(20).required()
 
 });
 
@@ -50,13 +51,13 @@ route.post('/news',authenticateTokenNews, (req,res) => {
     if(error){
         res.status(400).send(error.details[0].message);
     }else{
-        let query = 'insert into vesti (author, title, content) values (?,?,?)';
-        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content]);
+        let query = 'insert into vesti (author, title, content, category) values (?,?,?,?)';
+        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content, req.body.category]);
 
         pool.query(formated, (err,response) =>{
             if(error){
                 res.status(500).send(error.sqlMessage);
-            } else { //moze i bez ovoga, npr samo res.send(user added);
+            } else {
                 query = 'select * from vesti where id=?';
                 formated = mysql.format(query, [response.insertId]);
 
@@ -96,8 +97,8 @@ route.put('/new/:id([0-9]+)?/', authenticateTokenNews, (req,res) => {
     if(error){
         res.status(400).send(error.details[0].message);
     }else{
-        let query = 'update vesti set author=?, title=?, content=? where id=?';
-        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content, req.params.id]);
+        let query = 'update vesti set author=?, title=?, content=?, category=? where id=?';
+        let formated = mysql.format(query, [req.body.author, req.body.title, req.body.content,req.body.category, req.params.id]);
 
         pool.query(formated, (err,response) =>{
             if(error){

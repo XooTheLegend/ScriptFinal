@@ -46,10 +46,32 @@ route.post('/comments', (req,res) => {
             if(error){
                 res.status(500).send(error.sqlMessage);
             } else {
-                res.send('Comment added')
+                query = 'select * from komentari where id=?';
+                formated = mysql.format(query, [response.insertId]);
+
+                pool.query(formated, (err,rows) => {
+                    if(err){
+                        res.status(500).send(error.sqlMessage);
+                    }else{
+                        res.send(rows[0])
+                    }
+                });
             }
         });
     }
+});
+
+route.delete('/comments/:id', (req,res) => {
+    let query = 'delete from komentari where news=?';
+    let formated = mysql.format(query, [req.params.id]);
+
+    pool.query(formated, (err,rows) =>{
+        if(err){
+            res.status(500).message(err.sqlMessage);
+        } else {
+            res.status(200).send('Comments are deleted');
+        }
+    });
 });
 
 module.exports = route;
